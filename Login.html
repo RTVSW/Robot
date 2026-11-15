@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Терминал регистрации | Учебный робот</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            background: #050508;
+            color: #e8c87a;
+            font-family: monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .terminal {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(10, 10, 16, 0.95);
+            border: 1px solid #9b7bb8;
+            border-radius: 12px;
+            padding: 24px 22px;
+            box-shadow: 0 0 40px rgba(155, 123, 184, 0.15);
+        }
+
+        h1 {
+            font-size: 18px;
+            margin-bottom: 6px;
+            color: #e8c87a;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.6;
+            margin-bottom: 22px;
+        }
+
+        label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            opacity: 0.8;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 12px;
+            margin-bottom: 14px;
+            background: #000;
+            border: 1px solid #e8c87a55;
+            border-radius: 6px;
+            color: #e8c87a;
+            font-family: monospace;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #e8c87a;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 6px;
+            background: #4a2e15;
+            border: 1px solid #e8c87a;
+            border-radius: 6px;
+            color: #e8c87a;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #5a3a1f;
+        }
+
+        .switch {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .switch span {
+            color: #9b7bb8;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        #message {
+            margin-top: 14px;
+            font-size: 12px;
+            min-height: 18px;
+            color: #aaa;
+        }
+
+        .error { color: #ff6b6b; }
+        .success { color: #6bffb8; }
+    </style>
+</head>
+<body>
+
+    <div class="terminal">
+        <h1>Терминал доступа</h1>
+        <div class="subtitle">Учебный 3D-робот · Contour</div>
+
+        <div id="form">
+            <label>Электронная почта</label>
+            <input type="email" id="email" placeholder="name@example.com" autocomplete="email">
+
+            <label>Пароль</label>
+            <input type="password" id="password" placeholder="минимум 6 символов" autocomplete="current-password">
+
+            <button id="mainBtn" onclick="handleAuth()">Зарегистрироваться</button>
+
+            <div class="switch">
+                <span id="switchText" onclick="toggleMode()">Уже есть аккаунт? Войти</span>
+            </div>
+
+            <div id="message"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getAuth, 
+            createUserWithEmailAndPassword, 
+            signInWithEmailAndPassword,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAkMWBSQ5-1aJEwmf5ijETE0P0ulE_UOwc",
+            authDomain: "contour-5d72a.firebaseapp.com",
+            databaseURL: "https://contour-5d72a-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "contour-5d72a",
+            storageBucket: "contour-5d72a.firebasestorage.app",
+            messagingSenderId: "386084173741",
+            appId: "1:386084173741:web:919c2ebe2c1789d9735324"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        let isLoginMode = false;
+
+        window.toggleMode = function() {
+            isLoginMode = !isLoginMode;
+            const btn = document.getElementById('mainBtn');
+            const switchText = document.getElementById('switchText');
+
+            if (isLoginMode) {
+                btn.textContent = "Войти";
+                switchText.textContent = "Нет аккаунта? Зарегистрироваться";
+            } else {
+                btn.textContent = "Зарегистрироваться";
+                switchText.textContent = "Уже есть аккаунт? Войти";
+            }
+            clearMessage();
+        };
+
+        window.handleAuth = async function() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            if (!email || !password) {
+                showMessage("Введите почту и пароль", "error");
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage("Пароль должен быть не меньше 6 символов", "error");
+                return;
+            }
+
+            try {
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                    showMessage("Успешный вход! Переходим...", "success");
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showMessage("Аккаунт создан! Переходим...", "success");
+                }
+
+                setTimeout(() => {
+                    window.location.href = "robot.html";
+                }, 1100);
+
+            } catch (error) {
+                let msg = "Ошибка: " + error.message;
+
+                if (error.code === "auth/email-already-in-use") {
+                    msg = "Эта почта уже зарегистрирована";
+                } else if (error.code === "auth/invalid-email") {
+                    msg = "Неверный формат почты";
+                } else if (error.code === "auth/wrong-password") {
+                    msg = "Неверный пароль";
+                } else if (error.code === "auth/user-not-found") {
+                    msg = "Пользователь не найден";
+                } else if (error.code === "auth/weak-password") {
+                    msg = "Пароль слишком слабый";
+                }
+
+                showMessage(msg, "error");
+            }
+        };
+
+        function showMessage(text, type) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = type;
+        }
+
+        function clearMessage() {
+            const el = document.getElementById('message');
+            el.textContent = "";
+            el.className = "";
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Уже авторизован
+            }
+        });
+    </script>
+</body>
+</html>
